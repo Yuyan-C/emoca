@@ -873,22 +873,25 @@ class FaceVideoDataModule(FaceDataModuleBase):
         import ffmpeg
         self.video_metas = []
         for vi, vid_file in enumerate(tqdm(self.video_list)):
-            vid = ffmpeg.probe(str( Path(self.root_dir) / vid_file))
-            # codec_idx = [idx for idx in range(len(vid)) if vid['streams'][idx]['codec_type'] == 'video']
-            codec_idx = [idx for idx in range(len(vid)) if vid['streams'][0]['codec_type'] == 'video']
-            if len(codec_idx) == 0:
-                raise RuntimeError("Video file has no video streams! '%s'" % str(vid_file))
-            # if len(codec_idx) > 1:
-                # raise RuntimeError("Video file has two video streams! '%s'" % str(vid_file))
-            print("[WARNING] Video file has %d video streams. Only the first one will be processed" % len(codec_idx))
-            codec_idx = codec_idx[0]
-            vid_info = vid['streams'][codec_idx]
-            vid_meta = {}
-            vid_meta['fps'] = vid_info['avg_frame_rate']
-            vid_meta['width'] = int(vid_info['width'])
-            vid_meta['height'] = int(vid_info['height'])
-            vid_meta['num_frames'] = int(vid_info['nb_frames'])
-            self.video_metas += [vid_meta]
+            try:
+                vid = ffmpeg.probe(str( Path(self.root_dir) / vid_file))
+                # codec_idx = [idx for idx in range(len(vid)) if vid['streams'][idx]['codec_type'] == 'video']
+                codec_idx = [idx for idx in range(len(vid)) if vid['streams'][0]['codec_type'] == 'video']
+                if len(codec_idx) == 0:
+                    raise RuntimeError("Video file has no video streams! '%s'" % str(vid_file))
+                # if len(codec_idx) > 1:
+                    # raise RuntimeError("Video file has two video streams! '%s'" % str(vid_file))
+                print("[WARNING] Video file has %d video streams. Only the first one will be processed" % len(codec_idx))
+                codec_idx = codec_idx[0]
+                vid_info = vid['streams'][codec_idx]
+                vid_meta = {}
+                vid_meta['fps'] = vid_info['avg_frame_rate']
+                vid_meta['width'] = int(vid_info['width'])
+                vid_meta['height'] = int(vid_info['height'])
+                vid_meta['num_frames'] = int(vid_info['nb_frames'])
+                self.video_metas += [vid_meta]
+            except ffmpeg.Error as e:
+                print(e.stderr)
 
     def _loadMeta(self):
         if self.loaded:
